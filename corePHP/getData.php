@@ -23,8 +23,23 @@ if(
 && $_GET['role'] === $role_db['role'] 
 && ($_GET['role'] === 'admin' || $_GET['role'] === 'user')
 && $_GET['action'] === 'getClients'
-){    
-    echo getClientsData();
+){ 
+    $page = $_GET['page'];
+    $limit = $_GET['limit'];    
+
+
+    if($_GET['filterName'] === 'ALL' && $_GET['filterCity'] === 'ALL'){
+        echo getClientsDataFull($page, $limit);
+    }
+    else if($_GET['filterName'] !== 'ALL' && $_GET['filterCity'] === 'ALL'){
+        echo getClientsDataFilterName($_GET['filterName'], $page, $limit);
+    }
+    else if($_GET['filterName'] !== 'ALL' && $_GET['filterCity'] !== 'ALL'){
+        echo getClientsDataFilterNameCity($_GET['filterName'], $_GET['filterCity'], $page, $limit);
+    }    
+    else{
+        echo getClientsFilterCity( $_GET['filterCity'], $page, $limit);
+    }    
 }
 else if(
     $_GET['hash'] === $hash_db['hash']    

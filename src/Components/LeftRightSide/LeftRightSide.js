@@ -1,4 +1,5 @@
 import React from 'react';
+import css from './LeftRightSide.module.css';
 
 import {
     gdTask,
@@ -8,9 +9,13 @@ import {
 
 import {
     getClients,
+    getClientsNames,
+    getClientsCity,
     getTasks,
     getLanguageButtonMainArea,
-    getLanguage
+    getLanguage,
+    getLanguagefieldsOfTask,
+    getTotalClient
 } from '../../redux/selector';
 
 import { compose } from 'redux';
@@ -22,22 +27,18 @@ class LeftRightSide extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            name: JSON.parse(localStorage.getItem('reactUserLogin')).name,
+            hash: JSON.parse(localStorage.getItem('reactUserLogin')).hash,
+            role: JSON.parse(localStorage.getItem('reactUserLogin')).role,
+
             userId: null,
 
+            filterFirstName: 'ALL',
+            filterCity: 'ALL',
+
             paginationClientOnPage: 5,
-            paginationCountUser: null,
-            paginationPages: null,
-            paginationPagesFirstIndex: 0,
-            paginationPagesLastIndex: 4,
-
             paginationActivePage: 1,
-            paginationClientList: null,
-            paginationTable: null,
 
-            filterFirstName: null,
-            filterCity: null,
-            filterListFirstName: null,
-            filterListCity: null,
 
             displayTask: 'd-block',
             displayAddTask: 'd-none',
@@ -52,151 +53,128 @@ class LeftRightSide extends React.Component {
     }
 
 
-    componentDidUpdate = (prevProps, prevState) => {
+    componentDidUpdate = (prevProps) => {
         if (this.props.clients !== prevProps.clients) {
             this.selectClient(this.props.clients[0].id);
-            this.paginationData();
+            this.getTaskUserId(this.props.clients[0].id);
+        }
+    }
+
+    setFirsNameFilter = (event) => {
+
+        let paramsClient = null;
+        if (event.target.value === 'ALL' || event.target.value === 'Выбрать ВСЕ') {
+            this.setState({ filterFirstName: 'ALL' });
+            paramsClient = {
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
+                'action': 'getClients',
+                'filterName': 'ALL',
+                'filterCity': this.state.filterCity,
+                'limit': this.state.paginationClientOnPage,
+                'page': 1,
+            };
+        } else {
+            this.setState({ filterFirstName: event.target.value });
+            paramsClient = {
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
+                'action': 'getClients',
+                'filterName': event.target.value,
+                'filterCity': this.state.filterCity,
+                'limit': this.state.paginationClientOnPage,
+                'page': 1,
+            };
         }
 
-        if (this.state.filterFirstName !== prevState.filterFirstName || this.state.filterCity !== prevState.filterCity) {
-            this.paginationData();
+        let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
+        this.props.gdClients(queryStringClient);
+        this.setState({ paginationActivePage: 1 });
+    }
+
+    setCityFilter = (event) => {
+        let paramsClient = null;
+        if (event.target.value === 'ALL' || event.target.value === 'Выбрать ВСЕ') {
+            this.setState({ filterCity: 'ALL' });
+            paramsClient = {
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
+                'action': 'getClients',
+                'filterName': this.state.filterFirstName,
+                'filterCity': 'ALL',
+                'limit': this.state.paginationClientOnPage,
+                'page': 1,
+            };
+        } else {
+            this.setState({ filterCity: event.target.value });
+            paramsClient = {
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
+                'action': 'getClients',
+                'filterName': this.state.filterFirstName,
+                'filterCity': event.target.value,
+                'limit': this.state.paginationClientOnPage,
+                'page': 1,
+            };
         }
 
-        if (this.state.paginationCountUser !== prevState.paginationCountUser || this.state.paginationClientOnPage !== prevState.paginationClientOnPage) {
-            this.paginationData();
-        }
-
+        let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
+        this.props.gdClients(queryStringClient);
+        this.setState({ paginationActivePage: 1 });
     }
 
     selectClient = (id) => {
         this.setState({ userId: id })
         this.getTaskUserId(id);
-    }
-
-    paginationData = () => {
-        if (this.state.paginationCountUser !== null) {
-            let clientCounter = this.state.paginationCountUser;
-
-            let arrPages = [];
-            for (let i = 1; i <= Math.ceil(clientCounter / this.state.paginationClientOnPage); i++) {
-                arrPages.push(i)
-            }
-            this.setState({ paginationPages: arrPages });
-            this.setPage(1);
-        }
-        this.setClients();
-    }
-
-    setPage = (page) => {
-        this.setState({ paginationActivePage: page });
-
-        let firstIndex = (page - 1) * this.state.paginationClientOnPage;
-        let lastIndex = page * this.state.paginationClientOnPage - 1;
-        let lastIndexTrue = '';
-        this.setState({ paginationPagesFirstIndex: firstIndex });
-        if (lastIndex < this.state.paginationClientList.length) {
-            lastIndexTrue = lastIndex;
-        } else {
-            lastIndexTrue = this.state.paginationClientList.length - 1;
-        }
-        this.setState({ paginationPagesLastIndex: lastIndexTrue });
-
-        this.setClients();
-        let paginationTableData = [];
-        for (let i = firstIndex; i <= lastIndexTrue; i++) {
-            paginationTableData.push(this.state.paginationClientList[i]);
-        }
-
-        this.setState({ paginationTable: paginationTableData });
-
-        if (JSON.stringify(paginationTableData) !== '[]') {
-            this.selectClient(paginationTableData[0].id);
-        }
-
+        this.stopAddNewTask();
+        this.stopEditNewTask();
+        this.stopEditNewClient();
     }
 
     setClientOnPage = (event) => {
         this.setState({ paginationClientOnPage: event.target.value });
-        this.setClients();
+        let paramsClient = {
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
+            'action': 'getClients',
+            'filterName': this.state.filterFirstName,
+            'filterCity': this.state.filterCity,
+            'limit': event.target.value,
+            'page': 1,
+        };
+        let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
+        this.props.gdClients(queryStringClient);
+
+        this.setState({ paginationActivePage: 1 });
     }
 
-    setClients = () => {
-        let clients = this.props.clients;
+    setPage = (element) => {
+        this.setState({ paginationActivePage: element });
 
-        let filterToFirstName = [];
-        let filterToClientsCity = [];
-
-
-        if (this.state.filterFirstName !== null) {
-            clients.map(element =>
-                element.FirstName === this.state.filterFirstName
-                &&
-                filterToFirstName.push(element)
-            )
-        } else {
-            clients.map(element => filterToFirstName.push(element))
-        }
-
-        if (this.state.filterCity !== null) {
-            filterToFirstName.map(element =>
-                element.City === this.state.filterCity
-                &&
-                filterToClientsCity.push(element)
-            )
-        } else {
-            filterToFirstName.map(element => filterToClientsCity.push(element))
-        }
-
-        this.setState({ paginationClientList: filterToClientsCity });
-        this.setState({ paginationCountUser: filterToClientsCity.length });
-
-        if (JSON.stringify(filterToClientsCity) !== '[]') {
-            this.selectClient(filterToClientsCity[0].id)
-        }
-
-
-        const compareNumbers = (a, b) => {
-            return a - b;
-        }
-        let arrFistName = [];
-        clients.map(element => arrFistName.push(element.FirstName));
-        let FirstName = new Set(arrFistName);
-        let FirstNamefilter = Array.from(FirstName).sort(compareNumbers);
-        let arrCity = [];
-        clients.map(element => arrCity.push(element.City));
-        let City = new Set(arrCity);
-        let Cityfilter = Array.from(City).sort(compareNumbers);
-
-        this.setState({ filterListFirstName: FirstNamefilter });
-        this.setState({ filterListCity: Cityfilter });
-    }
-
-    setFirsNameFilter = (event) => {
-        if (event.target.value === 'ALL' || event.target.value === 'Выбрать ВСЕ') {
-            this.setState({ filterFirstName: null })
-        } else {
-            this.setState({ filterFirstName: event.target.value })
-        }
-        this.setClients();
-    }
-    setCityFilter = (event) => {
-        if (event.target.value === 'ALL' || event.target.value === 'Выбрать ВСЕ') {
-            this.setState({ filterCity: null })
-        } else {
-            this.setState({ filterCity: event.target.value })
-        }
-        this.setClients();
+        let paramsClient = {
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
+            'action': 'getClients',
+            'filterName': this.state.filterFirstName,
+            'filterCity': this.state.filterCity,
+            'limit': this.state.paginationClientOnPage,
+            'page': element,
+        };
+        let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
+        this.props.gdClients(queryStringClient);
     }
 
     getTaskUserId = (id) => {
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'getTaskUserId',
             'id': id,
         };
@@ -214,7 +192,8 @@ class LeftRightSide extends React.Component {
         this.setState({ displayEditTask: 'd-block' })
         this.setState({ idTask: idTask })
     }
-    editNewClient = () => {
+    editNewClient = (event) => {
+        event.stopPropagation();
         this.setState({ displayTask: 'd-none' })
         this.setState({ displayEditClient: 'd-block' })
     }
@@ -233,15 +212,12 @@ class LeftRightSide extends React.Component {
     }
 
     addTask = (event) => {
-        event.preventDefault();
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
+        event.preventDefault();       
 
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'addNewTask',
             'idClient': this.state.userId,
 
@@ -260,14 +236,11 @@ class LeftRightSide extends React.Component {
     editTask = (event) => {
 
         event.preventDefault();
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
+        
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'editTask',
             'idClient': this.state.userId,
             'WHERE_ID_TASK': this.state.idTask,
@@ -287,14 +260,10 @@ class LeftRightSide extends React.Component {
     }
 
     deleteTask = (idTask) => {
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'deleteTask',
             'idClient': this.state.userId,
             'WHERE_ID_TASK': idTask,
@@ -304,20 +273,71 @@ class LeftRightSide extends React.Component {
     }
 
     deleteClient = () => {
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'deleteClient',
             'idClient': this.state.userId,
+            'limit': this.state.paginationClientOnPage,
+            'page': 1,
         };
         let queryString = Object.keys(paramsUser).map(key => key + '=' + paramsUser[key]).join('&');
         this.props.gdNewUserClient(queryString, paramsUser['action']);
         this.getTaskUserId(this.state.userId);
+        
+        this.setState({ paginationActivePage: 1 });
+    }
+
+    editClient = (event) => {
+
+        event.preventDefault();
+
+        let regexp = /^380\d{2}\d{3}\d{2}\d{2}$/;
+        let phone1 = event.target["Phone1"].value;
+        let phone2 = event.target["Phone2"].value;
+        let phone3 = event.target["Phone3"].value;
+
+        if (!regexp.test(phone1)) {
+            alert('Phone number 1 - is not valid')
+        }
+        else if (phone2 && !regexp.test(phone2)) {
+            alert('Phone number 2 - is not valid')
+        }
+        else if (phone3 && !regexp.test(phone3)) {
+            alert('Phone number 3 - is not valid')
+        }
+        else {
+
+            let Phone = phone1;
+            if (phone2) {
+                Phone += ';' + phone2
+            }
+            if (phone3) {
+                Phone += ';' + phone3
+            }
+
+            let params = {
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
+                'idClient': this.state.userId,
+                'action': 'editClient',
+                'FirstName': event.target["FirstName"].value.trim(),
+                'LastName': event.target["LastName"].value.trim(),
+                'City': event.target["City"].value.trim(),
+                'Address': event.target["Address"].value.trim(),
+                'Phone': Phone,
+                'limit': this.state.paginationClientOnPage,
+                'page': 1,
+            };
+            let queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&');
+
+            this.props.gdNewUserClient(queryString, params['action']);
+            this.stopEditNewClient();
+           
+            this.setState({ paginationActivePage: 1 });
+        }
     }
 
     //https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
@@ -384,79 +404,17 @@ class LeftRightSide extends React.Component {
         }
     }
 
-    editClient = (event) => {
-
-        event.preventDefault();
-
-        let regexp = /^380\d{2}\d{3}\d{2}\d{2}$/;
-        let phone1 = event.target["Phone1"].value;
-        let phone2 = event.target["Phone2"].value;
-        let phone3 = event.target["Phone3"].value;
-
-        if (!regexp.test(phone1)) {
-            alert('Phone number 1 - is not valid')
-        }
-        else if (phone2 && !regexp.test(phone2)) {
-            alert('Phone number 2 - is not valid')
-        }
-        else if (phone3 && !regexp.test(phone3)) {
-            alert('Phone number 3 - is not valid')
-        }
-        else {
-            let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-            let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-            let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
-            let Phone = phone1;
-            if (phone2) {
-                Phone += ';' + phone2
-            }
-            if (phone3) {
-                Phone += ';' + phone3
-            }
-
-            let params = {
-                'name': name,
-                'hash': hash,
-                'role': role,
-                'idClient': this.state.userId,
-                'action': 'editClient',
-                'FirstName': event.target["FirstName"].value.trim(),
-                'LastName': event.target["LastName"].value.trim(),
-                'City': event.target["City"].value.trim(),
-                'Address': event.target["Address"].value.trim(),
-                'Phone': Phone,
-            };
-            let queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&');
-
-            this.props.gdNewUserClient(queryString, params['action']);
-            this.stopEditNewClient();
-
-            let paramsClient = {
-                'name': name,
-                'hash': hash,
-                'role': role,
-                'action': 'getClients',
-            };
-            let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
-            this.props.gdClients(queryStringClient);
-        }
-    }
-
-    render() {
-
-        console.log(this.props.mainArea)
-
+    render() {        
         return <>
             < hr />
             <div className="row mb-2" >
-                <div className="col-lg-6 cl-md-12 col-sm-12 col-12" >
+                <div className="col-lg-7 col-md-12 col-sm-12" >
                     <div className="row" >
                         <div className="col-9 text-center mb-2" >
                             {
-                                this.state.paginationPages !== null
+                                this.props.totalClient !== null
                                 &&
-                                this.state.paginationPages.map(element =>
+                                this.props.totalClient.numberPages.map(element =>
                                     this.state.paginationActivePage === element
                                         ?
                                         <Button key={element} variant="primary" className="m-1"
@@ -475,7 +433,7 @@ class LeftRightSide extends React.Component {
                         </div>
 
                         <div className="col-3 mb-2" >
-                        {this.props.mainArea.clientOnPage[this.props.lang].clientOnPageBtn}&nbsp;
+                            {this.props.mainArea.clientOnPage[this.props.lang].clientOnPageBtn}&nbsp;
                         <select
                                 onChange={(event) => this.setClientOnPage(event)}
                                 defaultValue={5}
@@ -487,182 +445,180 @@ class LeftRightSide extends React.Component {
                             </select>
                         </div>
                     </div>
-                    <div className="col-lg-6 col-md-12 col-sm-12" >
-                        <Table striped bordered hover size="sm" style={{ fontSize: '15px' }}>
-                            <thead>
-                                <tr>
-                                    <th className="align-middle text-center">
+
+                    <Table className={css.tableText} striped bordered hover size="sm">
+                        <thead>
+                            <tr>
+                                <th className="align-middle text-center">
                                     {this.props.mainArea.tableID[this.props.lang].tableIDBtn}
-                                        </th>
-                                    <th className="align-down text-center">
+                                </th>
+                                <th className="align-down text-center">
                                     {this.props.mainArea.tableFN[this.props.lang].tableFNBtn}
                                     <select
-                                            onChange={(event) => this.setFirsNameFilter(event)}
-                                            defaultValue={"ALL"}
-                                        >
-                                            <option >ALL</option>
-                                            {
-                                                this.state.filterListFirstName !== null
-                                                &&
-                                                this.state.filterListFirstName.map(element =>
-                                                    <option key={element}>{element}</option>
-                                                )
-                                            }
-                                        </select>
-                                    </th>
-                                    <th className="align-middle text-center">
+                                        onChange={(event) => this.setFirsNameFilter(event)}
+                                        defaultValue={this.props.mainArea.filterAll[this.props.lang].filterAllBtn}
+                                    >
+                                        <option >{this.props.mainArea.filterAll[this.props.lang].filterAllBtn}</option>
+                                        {
+                                            this.props.clientNames !== null
+                                            &&
+                                            this.props.clientNames.map(element =>
+                                                <option key={element}>{element}</option>
+                                            )
+                                        }
+                                    </select>
+                                </th>
+                                <th className="align-middle text-center">
                                     {this.props.mainArea.tableLN[this.props.lang].tableLNBtn}
-                                        </th>
-                                    <th className="align-down text-center">
+                                </th>
+                                <th className="align-down text-center">
                                     {this.props.mainArea.tableCity[this.props.lang].tableCityBtn}
                                     <select
-                                            onChange={(event) => this.setCityFilter(event)}
-                                            defaultValue={"ALL"}
-                                        >
-                                            <option >ALL</option>
-                                            {
-                                                this.state.filterListCity !== null
-                                                &&
-                                                this.state.filterListCity.map(element =>
-                                                    <option key={element}>{element}</option>
-                                                )
-                                            }
-                                        </select>
-                                    </th>
-                                    <th className="align-middle text-center">
+                                        onChange={(event) => this.setCityFilter(event)}
+                                        defaultValue={this.props.mainArea.filterAll[this.props.lang].filterAllBtn}
+                                    >
+                                        <option >{this.props.mainArea.filterAll[this.props.lang].filterAllBtn}</option>
+                                        {
+                                            this.props.clientCity !== null
+                                            &&
+                                            this.props.clientCity.map(element =>
+                                                <option key={element}>{element}</option>
+                                            )
+                                        }
+                                    </select>
+                                </th>
+                                <th className="align-middle text-center">
                                     {this.props.mainArea.tablePh[this.props.lang].tablePhBtn}
-                                        </th>
+                                </th>
 
-                                    {
-                                        JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
-                                        &&
-                                        <th className="align-middle text-center">
-                                            {this.props.mainArea.tableEDC[this.props.lang].tableEDCBtn}
-                                            </th>
-                                    }
-
-                                </tr>
-                            </thead>
-                            <tbody>
                                 {
-                                    this.state.paginationTable !== null
+                                    JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
                                     &&
-                                    this.state.paginationTable.map(element =>
-
-
-                                        element.id === this.state.userId
-                                            ?
-                                            <tr key={element.id} onClick={() => this.selectClient(element.id)}
-                                                className="font-weight-bold text-danger" style={{ cursor: 'pointer' }}>
-                                                <td>{element.id}</td>
-                                                <td>{element.FirstName}</td>
-                                                <td>{element.LastName}</td>
-                                                <td>{element.City}</td>
-                                                <td>{
-                                                    element.Phone.split(';').map(
-                                                        (tel, index) =>
-                                                            index < element.Phone.split(';').length - 1
-                                                                ?
-                                                                <li className="list-inline-item" key={tel + Math.random()}>
-                                                                    <a className="text-xs-center"
-                                                                        href={"tel:+" + tel}>
-                                                                        {tel}
-                                                                    </a>;
-                                                    </li>
-                                                                :
-                                                                <li className="list-inline-item" key={tel + Math.random()}>
-                                                                    <a className="text-xs-center"
-                                                                        href={"tel:+" + tel}>
-                                                                        {tel}
-                                                                    </a>
-                                                                </li>
-                                                    )
-                                                }</td>
-                                                {
-                                                    JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
-                                                    &&
-                                                    <th className="align-middle text-center">
-                                                        <Button onClick={() => this.editNewClient(element.id)} variant="warning" className="w-100 p-0 m-0">
-                                                        {this.props.mainArea.edit[this.props.lang].editBtn}
-                                                            </Button>
-                                                        <br />
-                                                        <Button
-                                                            onClick={() => {
-                                                                if (window.confirm('Are you sure you wish to delete this item?'))
-                                                                    this.deleteClient()
-                                                            }
-                                                            }
-                                                            variant="danger" className="w-100 p-0 m-0">
-                                                                {this.props.mainArea.delete[this.props.lang].deleteBtn}
-                                                                </Button>
-                                                    </th>
-                                                }
-                                            </tr>
-                                            :
-                                            <tr key={element.id} onClick={() => this.selectClient(element.id)} style={{ cursor: 'pointer' }}>
-                                                <td>{element.id}</td>
-                                                <td>{element.FirstName}</td>
-                                                <td>{element.LastName}</td>
-                                                <td>{element.City}</td>
-                                                <td>{
-                                                    element.Phone.split(';').map(
-                                                        (tel, index) =>
-                                                            index < element.Phone.split(';').length - 1
-                                                                ?
-                                                                <li className="list-inline-item" key={tel + Math.random()}>
-                                                                    <a className="text-xs-center"
-                                                                        href={"tel:+" + tel}>
-                                                                        {tel}
-                                                                    </a>;
-                                                    </li>
-                                                                :
-                                                                <li className="list-inline-item" key={tel + Math.random()}>
-                                                                    <a className="text-xs-center"
-                                                                        href={"tel:+" + tel}>
-                                                                        {tel}
-                                                                    </a>
-                                                                </li>
-                                                    )
-                                                }</td>
-                                                {
-                                                    JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
-                                                    &&
-                                                    <th className="align-middle text-center"><Button variant="secondary" className="w-100 p-0 m-0">
-                                                       {this.props.mainArea.editDelete[this.props.lang].editDeleteBtn}
-                                                        </Button></th>
-                                                }
-                                            </tr>
-                                    )
+                                    <th className="align-middle text-center">
+                                        {this.props.mainArea.tableEDC[this.props.lang].tableEDCBtn}
+                                    </th>
                                 }
-                            </tbody>
-                        </Table>
-                    </div>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                this.props.clients !== null && this.props.clients !== undefined
+                                &&
+                                this.props.clients.map(element =>
+
+
+                                    element.id === this.state.userId
+                                        ?
+                                        <tr key={element.id} onClick={() => this.selectClient(element.id)}
+                                            className="font-weight-bold text-danger" style={{ cursor: 'pointer' }}>
+                                            <td>{element.id}</td>
+                                            <td>{element.FirstName}</td>
+                                            <td>{element.LastName}</td>
+                                            <td>{element.City}</td>
+                                            <td>{
+                                                element.Phone.split(';').map(
+                                                    (tel, index) =>
+                                                        index < element.Phone.split(';').length - 1
+                                                            ?
+                                                            <li className="list-inline-item" key={tel + Math.random()}>
+                                                                <a className="text-xs-center"
+                                                                    href={"tel:+" + tel}>
+                                                                    {tel}
+                                                                </a>;
+                                                    </li>
+                                                            :
+                                                            <li className="list-inline-item" key={tel + Math.random()}>
+                                                                <a className="text-xs-center"
+                                                                    href={"tel:+" + tel}>
+                                                                    {tel}
+                                                                </a>
+                                                            </li>
+                                                )
+                                            }</td>
+                                            {
+                                                JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
+                                                &&
+                                                <th className="align-middle text-center">
+                                                    <Button onClick={(event) => this.editNewClient(event)} variant="warning w-100 p-0 m-0 mb-1 border border-dark">
+                                                        <span className={css.tableButton}>{this.props.mainArea.edit[this.props.lang].editBtn}</span>
+                                                    </Button>
+                                                    <br />
+                                                    <Button
+                                                        onClick={() => {
+                                                            if (window.confirm('Are you sure you wish to delete this item?'))
+                                                                this.deleteClient()
+                                                        }
+                                                        }
+                                                        variant="danger w-100 p-0 m-0 border border-dark">
+                                                        <span className={css.tableButton}>{this.props.mainArea.delete[this.props.lang].deleteBtn}</span>
+                                                    </Button>
+                                                </th>
+                                            }
+                                        </tr>
+                                        :
+                                        <tr key={element.id} onClick={() => this.selectClient(element.id)} style={{ cursor: 'pointer' }}>
+                                            <td>{element.id}</td>
+                                            <td>{element.FirstName}</td>
+                                            <td>{element.LastName}</td>
+                                            <td>{element.City}</td>
+                                            <td>{
+                                                element.Phone.split(';').map(
+                                                    (tel, index) =>
+                                                        index < element.Phone.split(';').length - 1
+                                                            ?
+                                                            <li className="list-inline-item" key={tel + Math.random()}>
+                                                                <a className="text-xs-center"
+                                                                    href={"tel:+" + tel}>
+                                                                    {tel}
+                                                                </a>;
+                                                    </li>
+                                                            :
+                                                            <li className="list-inline-item" key={tel + Math.random()}>
+                                                                <a className="text-xs-center"
+                                                                    href={"tel:+" + tel}>
+                                                                    {tel}
+                                                                </a>
+                                                            </li>
+                                                )
+                                            }</td>
+                                            {
+                                                JSON.parse(localStorage.getItem('reactUserLogin')).role === 'admin'
+                                                &&
+                                                <th className="align-middle text-center"><Button variant="secondary" className="w-100 p-0 m-0">
+                                                    <span className={css.tableButton}>{this.props.mainArea.editDelete[this.props.lang].editDeleteBtn}</span>
+                                                </Button></th>
+                                            }
+                                        </tr>
+                                )
+                            }
+                        </tbody>
+                    </Table>
                 </div>
 
-                <div className="col-lg-6 cl-md-12 col-sm-12 col-12" >
-                    <div className="row mb-3 px-4">
-                        <div className="col-9">
-                            <b>Sort by:</b>
-                            <Button onClick={this.sortTaskName} className="mx-1" variant="info" size='sm'>
-                                {this.props.mainArea.taskName[this.props.lang].taskNameBtn}
+                <div className="col-lg-5 col-md-12 col-sm-12" >
+                    <div className={"row mb-3"}>
+                        <div className={"col-lg-9 col-md-8 col-sm-8 col-12 mb-1 " + this.state.displayTask}>
+                            <Button onClick={this.sortTaskName} className="mx-1 mb-1" variant="info" size='sm'>
+                                <i className="fas fa-sort-numeric-up"></i>{this.props.mainArea.taskName[this.props.lang].taskNameBtn}
                             </Button>
-                            <Button onClick={this.sortIdTask} className="mx-1" variant="info" size='sm'>
-                                {this.props.mainArea.idTask[this.props.lang].idTaskBtn}
+                            <Button onClick={this.sortIdTask} className="mx-1 mb-1" variant="info" size='sm'>
+                                <i className="fas fa-sort-numeric-up"></i>{this.props.mainArea.idTask[this.props.lang].idTaskBtn}
                             </Button>
-                            <Button onClick={this.sortDate} className="mx-1" variant="info" size='sm'>
-                                {this.props.mainArea.date[this.props.lang].dateBtn}
+                            <Button onClick={this.sortDate} className="mx-1 mb-1" variant="info" size='sm'>
+                                <i className="fas fa-sort-numeric-up"></i>{this.props.mainArea.date[this.props.lang].dateBtn}
                             </Button>
                         </div>
-                        <div className="col-3">
-                            <Button onClick={this.addNewTask} variant="success" size='sm'>
+                        <div className={"col-lg-3 col-md-4 col-sm-4 col-12 mb-1 " + this.state.displayTask}>
+                            <Button onClick={this.addNewTask} variant="success" size='sm' className="float-right mb-1 mx-1">
                                 {this.props.mainArea.addTask[this.props.lang].addTaskBtn}
                             </Button>
                         </div>
                     </div>
 
-                    <div className="mb-3 px-3">
-                        <div className={this.state.displayTask}>
-                            <Accordion defaultActiveKey="0" className="mx-1">
+                    <div className="row mb-3">
+                        <div className={this.state.displayTask + ' w-100 ' + css.tableText}>
+                            <Accordion defaultActiveKey="0" className="mx-2 ">
                                 {
                                     this.props.tasks !== null
                                     &&
@@ -670,60 +626,63 @@ class LeftRightSide extends React.Component {
 
                                         element.idTask !== null
                                         &&
-                                        <Card key={element.idTask} className="mb-1 border border-dark">
+                                        <Card key={element.idTask} className="mb-1 border border-dark ">
                                             <Accordion.Toggle as={Card.Header} eventKey={element.idTask} style={{ cursor: 'pointer' }}>
                                                 <div className="row">
-                                                    <div className="col-3">
-                                                        <b>id Task</b> - {element.idTask}
+                                                    <div className="col-4">
+                                                        <b>{this.props.fieldsOfTask.idTask[this.props.lang].idTaskField}</b> - {element.idTask}
                                                     </div>
-                                                    <div className="col-5">
-                                                        <b>Task Name</b> - {element.taskName}
-                                                    </div>
-                                                    <div className="col-2 text-right">
+                                                    <div className="col-4 text-right">
                                                         <Button onClick={() => this.editNewTask(element.idTask)} variant="secondary " size='sm'>
-                                                            {this.props.mainArea.edit[this.props.lang].editBtn}
+                                                            <span className={css.tableButton}>{this.props.mainArea.edit[this.props.lang].editBtn}</span>
                                                         </Button>
                                                     </div>
-                                                    <div className="col-2 text-right">
+                                                    <div className="col-4 text-right">
                                                         <Button onClick={() => {
                                                             if (window.confirm('Are you sure you wish to delete this item?'))
                                                                 this.deleteTask(element.idTask)
                                                         }
                                                         } variant="danger" size='sm'>
-                                                            {this.props.mainArea.delete[this.props.lang].deleteBtn}
+                                                            <span className={css.tableButton}>{this.props.mainArea.delete[this.props.lang].deleteBtn}</span>
                                                         </Button>
                                                     </div>
-                                                    <div className="col-12">
-                                                        <hr />
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <b>Address:</b> {element.Address}
-                                                    </div>
-                                                    <div className="col-4">
-                                                        <b>Date</b> {element.date}
-                                                    </div>
-                                                    <div className="col-4">
-                                                        <b>Start time</b> {element.startTime}
-                                                    </div>
-                                                    <div className="col-4">
-                                                        <b>End time</b> {element.endTime}
-                                                    </div>
-
                                                 </div>
+                                                <hr />
+                                                <div className="row">
+                                                    <div className="col-7">
+                                                        <b>{this.props.fieldsOfTask.taskName[this.props.lang].taskNameField}</b> - {element.taskName}
+                                                    </div>
+                                                    <div className="col-5 border-left border-secondary">
+                                                        <b>{this.props.fieldsOfTask.address[this.props.lang].addressField}</b> {element.Address}
+                                                    </div>
+                                                </div>
+                                                <hr />
+                                                <div className="row">
+                                                    <div className="col-4">
+                                                        <b>{this.props.fieldsOfTask.date[this.props.lang].dateField}</b> {element.date}
+                                                    </div>
+                                                    <div className="col-4 border-left border-secondary">
+                                                        <b>{this.props.fieldsOfTask.startTime[this.props.lang].startTimeField}</b> {element.startTime}
+                                                    </div>
+                                                    <div className="col-4 border-left border-secondary">
+                                                        <b>{this.props.fieldsOfTask.endTime[this.props.lang].endTimeField}</b> {element.endTime}
+                                                    </div>
+                                                </div>
+
                                             </Accordion.Toggle>
                                             <Accordion.Collapse eventKey={element.idTask}>
                                                 <Card.Body>
                                                     <div className="row">
                                                         <div className="col-12">
-                                                            <b>Task Description:</b> {element.taskDescription}
+                                                            <b>{this.props.fieldsOfTask.taskDescription[this.props.lang].taskDescriptionField}</b> {element.taskDescription}
                                                             <hr />
                                                         </div>
                                                         <div className="col-6">
-                                                            <b>Date creation:</b><br />
+                                                            <b>{this.props.fieldsOfTask.dateCreation[this.props.lang].dateCreationField}</b><br />
                                                             {new Date(+element.dateCreation * 1000).toLocaleString()}
                                                         </div>
                                                         <div className="col-6">
-                                                            <b>Date edit:</b><br />
+                                                            <b>{this.props.fieldsOfTask.dateEdit[this.props.lang].dateEditField}</b><br />
                                                             {new Date(+element.dateLastEdit * 1000).toLocaleString()}
                                                         </div>
 
@@ -737,31 +696,31 @@ class LeftRightSide extends React.Component {
                             </Accordion>
                         </div>
 
-                        <div className={this.state.displayAddTask}>
+                        <div className={this.state.displayAddTask + ' w-100 mx-2'}>
                             <Form onSubmit={this.addTask}>
                                 <Form.Row>
                                     <Form.Group as={Col} controlId="taskName">
-                                        <Form.Label>Task Name</Form.Label>
-                                        <Form.Control type="text" placeholder="Task Name" required />
+                                        <Form.Label>{this.props.fieldsOfTask.taskName[this.props.lang].taskNameField}</Form.Label>
+                                        <Form.Control type="text" placeholder={this.props.fieldsOfTask.taskName[this.props.lang].taskNameField} required />
                                     </Form.Group>
                                 </Form.Row>
                                 <Form.Row>
                                     <Form.Group as={Col} controlId="description">
-                                        <Form.Label>Task description</Form.Label>
-                                        <Form.Control as="textarea" rows="3" placeholder="Task description" required />
+                                        <Form.Label>{this.props.fieldsOfTask.taskDescription[this.props.lang].taskDescriptionField}</Form.Label>
+                                        <Form.Control as="textarea" rows="3" placeholder={this.props.fieldsOfTask.taskDescription[this.props.lang].taskDescriptionField} required />
                                     </Form.Group>
                                 </Form.Row>
                                 <Form.Row>
                                     <Form.Group as={Col} controlId="date">
-                                        <Form.Label>Date</Form.Label>
+                                        <Form.Label>{this.props.fieldsOfTask.date[this.props.lang].dateField}</Form.Label>
                                         <Form.Control type="date" required />
                                     </Form.Group>
                                     <Form.Group as={Col} controlId="startTime">
-                                        <Form.Label>Start time</Form.Label>
+                                        <Form.Label>{this.props.fieldsOfTask.startTime[this.props.lang].startTimeField}</Form.Label>
                                         <Form.Control type="time" required />
                                     </Form.Group>
                                     <Form.Group as={Col} controlId="endTime">
-                                        <Form.Label>End time</Form.Label>
+                                        <Form.Label>{this.props.fieldsOfTask.endTime[this.props.lang].endTimeField}</Form.Label>
                                         <Form.Control type="time" required />
                                     </Form.Group>
                                 </Form.Row>
@@ -781,7 +740,7 @@ class LeftRightSide extends React.Component {
                             </Form>
                         </div>
 
-                        <div className={this.state.displayEditTask}>
+                        <div className={this.state.displayEditTask + ' w-100 mx-2'}>
                             {
                                 this.props.tasks !== null
                                 &&
@@ -791,27 +750,28 @@ class LeftRightSide extends React.Component {
                                     <Form onSubmit={this.editTask} key={element.idTask}>
                                         <Form.Row>
                                             <Form.Group as={Col} controlId="taskNameEdit">
-                                                <Form.Label>Task Name</Form.Label>
+                                                <h6>{this.props.fieldsOfTask.taskEditId[this.props.lang].taskEditIdField} {element.idTask}</h6>
+                                                <Form.Label>{this.props.fieldsOfTask.taskName[this.props.lang].taskNameField}</Form.Label>
                                                 <Form.Control type="text" defaultValue={element.taskName} required />
                                             </Form.Group>
                                         </Form.Row>
                                         <Form.Row>
                                             <Form.Group as={Col} controlId="descriptionEdit">
-                                                <Form.Label>Task description</Form.Label>
+                                                <Form.Label>{this.props.fieldsOfTask.taskDescription[this.props.lang].taskDescriptionField}</Form.Label>
                                                 <Form.Control as="textarea" rows="3" defaultValue={element.taskDescription} required />
                                             </Form.Group>
                                         </Form.Row>
                                         <Form.Row>
                                             <Form.Group as={Col} controlId="dateEdit">
-                                                <Form.Label>Date</Form.Label>
+                                                <Form.Label>{this.props.fieldsOfTask.date[this.props.lang].dateField}</Form.Label>
                                                 <Form.Control type="date" defaultValue={element.date} required />
                                             </Form.Group>
                                             <Form.Group as={Col} controlId="startTimeEdit">
-                                                <Form.Label>Start time</Form.Label>
+                                                <Form.Label>{this.props.fieldsOfTask.startTime[this.props.lang].startTimeField}</Form.Label>
                                                 <Form.Control type="time" defaultValue={element.startTime} required />
                                             </Form.Group>
                                             <Form.Group as={Col} controlId="endTimeEdit">
-                                                <Form.Label>End time</Form.Label>
+                                                <Form.Label>{this.props.fieldsOfTask.endTime[this.props.lang].endTimeField}</Form.Label>
                                                 <Form.Control type="time" defaultValue={element.endTime} required />
                                             </Form.Group>
                                         </Form.Row>
@@ -832,7 +792,7 @@ class LeftRightSide extends React.Component {
                             }
                         </div>
 
-                        <div className={this.state.displayEditClient}>
+                        <div className={this.state.displayEditClient + ' w-100 mx-2'}>
                             {
                                 this.props.clients !== null
                                 &&
@@ -840,6 +800,7 @@ class LeftRightSide extends React.Component {
                                     element.id === this.state.userId
                                     &&
                                     <Form onSubmit={this.editClient} key={element.id}>
+                                        <h6>Editing Client: id  - {element.id}</h6>
                                         <Form.Row>
                                             <Form.Group as={Col} controlId="FirstName">
                                                 <Form.Label>First name</Form.Label>
@@ -863,20 +824,20 @@ class LeftRightSide extends React.Component {
 
                                         <Form.Row key={Math.random()}>
                                             <Form.Group as={Col} controlId="Phone1" key={0}>
-                                                <Form.Label>Phone 1 - required<br />380507771144</Form.Label>
-                                                <Form.Control type="number" defaultValue={
+                                                <Form.Label><i className="fas fa-phone"></i> - 1 (required)<br />380507771144</Form.Label>
+                                                <Form.Control className="px-1" type="number" defaultValue={
                                                     element.Phone.split(';')[0]
                                                 } required />
                                             </Form.Group>
                                             <Form.Group as={Col} controlId="Phone2" key={1}>
-                                                <Form.Label>Phone 2<br />380507771144</Form.Label>
-                                                <Form.Control type="number" defaultValue={
-                                                   element.Phone.split(';')[1]
+                                                <Form.Label><i className="fas fa-phone"></i> - 2<br />380507771144</Form.Label>
+                                                <Form.Control className="px-1" type="number" defaultValue={
+                                                    element.Phone.split(';')[1]
                                                 } />
                                             </Form.Group>
                                             <Form.Group as={Col} controlId="Phone3" key={2}>
-                                                <Form.Label>Phone 2<br />380507771144</Form.Label>
-                                                <Form.Control type="number" defaultValue={
+                                                <Form.Label><i className="fas fa-phone"></i> - 3<br />380507771144</Form.Label>
+                                                <Form.Control className="px-1" type="number" defaultValue={
                                                     element.Phone.split(';')[2]
                                                 } />
                                             </Form.Group>
@@ -884,7 +845,7 @@ class LeftRightSide extends React.Component {
                                         <div className="row">
                                             <div className="col-12">
                                                 <Button variant="primary" type="submit" className="float-left">
-                                                {this.props.mainArea.editClient[this.props.lang].editClientBtn}
+                                                    {this.props.mainArea.editClient[this.props.lang].editClientBtn}
                                                 </Button>
                                                 <Button variant="secondary" className="float-right"
                                                     onClick={this.stopEditNewClient}
@@ -910,8 +871,12 @@ let mapStateToProps = (state) => {
     return {
         lang: getLanguage(state),
         clients: getClients(state),
+        clientNames: getClientsNames(state),
+        clientCity: getClientsCity(state),
         tasks: getTasks(state),
         mainArea: getLanguageButtonMainArea(state),
+        fieldsOfTask: getLanguagefieldsOfTask(state),
+        totalClient: getTotalClient(state),
     }
 }
 

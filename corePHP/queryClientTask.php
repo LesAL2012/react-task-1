@@ -1,16 +1,186 @@
 <?php
 require_once 'config_db.php';
 
-function getClientsData(){    
+function getClientsDataFull($page, $limit){    
     $mysqli = new mysqli(SERVERNAME, USERNAME, PASSWORD, DBNAME);
-    $sql_clients = "SELECT * FROM react_task_1_clients ORDER BY FirstName, LastName, City";
-    $res = $mysqli->query($sql_clients);    
+    $offset = ($page-1)*$limit;
+    
+    $sql_clients = "SELECT * FROM react_task_1_clients ORDER BY FirstName, LastName, City LIMIT ".$limit." OFFSET ".$offset;
+    $sql_names = "SELECT DISTINCT FirstName FROM react_task_1_clients ORDER BY FirstName";
+    $sql_city = "SELECT DISTINCT City FROM react_task_1_clients ORDER BY City";
+    $res = $mysqli->query($sql_clients);
+    $res_names = $mysqli->query($sql_names); 
+    $res_city = $mysqli->query($sql_city);       
+    
     $a = array();
+
     if (mysqli_num_rows($res) > 0) {
         while($row = mysqli_fetch_assoc($res)) {
-            $a[] = $row;
+            $a['client'][] = $row;
         }    
     };
+    
+    if (mysqli_num_rows($res_names) > 0) {
+        while($row = mysqli_fetch_assoc($res_names)) {
+            $a['names'][] = $row;
+        }    
+    };
+
+    if (mysqli_num_rows($res_city) > 0) {
+        while($row = mysqli_fetch_assoc($res_city)) {
+            $a['city'][] = $row;
+        }    
+    };
+
+    $number_clients = mysqli_num_rows( $mysqli->query("SELECT id FROM react_task_1_clients"));
+    $pages = [];
+    for($i=1; $i <= ceil( $number_clients / $limit ); $i++){
+        $pages[$i-1]=$i;
+    };
+    $a['total'] =  [
+        'clients'=>$number_clients,
+        'numberPages'=>$pages,
+    ];
+
+    
+    return json_encode($a);
+};
+
+function getClientsDataFilterName($filterName, $page, $limit){    
+    $mysqli = new mysqli(SERVERNAME, USERNAME, PASSWORD, DBNAME);
+    $offset = ($page-1)*$limit;
+    
+    $sql_clients = "SELECT * FROM react_task_1_clients WHERE FirstName = '".$filterName."' ORDER BY FirstName, LastName, City LIMIT ".$limit." OFFSET ".$offset;
+    $sql_names = "SELECT DISTINCT FirstName FROM react_task_1_clients ORDER BY FirstName";
+    $sql_city = "SELECT DISTINCT City FROM react_task_1_clients WHERE FirstName = '".$filterName."' ORDER BY City";
+    $res = $mysqli->query($sql_clients);
+    $res_names = $mysqli->query($sql_names); 
+    $res_city = $mysqli->query($sql_city);       
+    
+    $a = array();
+
+    if (mysqli_num_rows($res) > 0) {
+        while($row = mysqli_fetch_assoc($res)) {
+            $a['client'][] = $row;
+        }    
+    };
+    
+    if (mysqli_num_rows($res_names) > 0) {
+        while($row = mysqli_fetch_assoc($res_names)) {
+            $a['names'][] = $row;
+        }    
+    };
+
+    if (mysqli_num_rows($res_city) > 0) {
+        while($row = mysqli_fetch_assoc($res_city)) {
+            $a['city'][] = $row;
+        }    
+    };
+
+    $sql_pag = "SELECT id FROM react_task_1_clients WHERE FirstName = '".$filterName."'";
+    $number_clients = mysqli_num_rows( $mysqli->query($sql_pag));
+    $pages = [];
+    for($i=1; $i <= ceil( $number_clients / $limit ); $i++){
+        $pages[$i-1]=$i;
+    };
+    $a['total'] =  [
+        'clients'=>$number_clients,
+        'numberPages'=>$pages,
+    ];
+    
+    
+    return json_encode($a);
+};
+
+function getClientsDataFilterNameCity($filterName, $city, $page, $limit){    
+    $mysqli = new mysqli(SERVERNAME, USERNAME, PASSWORD, DBNAME);
+    $offset = ($page-1)*$limit;
+    
+    $sql_clients = "SELECT * FROM react_task_1_clients WHERE FirstName = '".$filterName."' AND City = '".$city."' ORDER BY FirstName, LastName, City LIMIT ".$limit." OFFSET ".$offset;
+    $sql_names = "SELECT DISTINCT FirstName FROM react_task_1_clients WHERE City = '".$city."' ORDER BY FirstName";
+    $sql_city = "SELECT DISTINCT City FROM react_task_1_clients WHERE FirstName = '".$filterName."' ORDER BY City";
+    $res = $mysqli->query($sql_clients);
+    $res_names = $mysqli->query($sql_names); 
+    $res_city = $mysqli->query($sql_city);       
+    
+    $a = array();
+
+    if (mysqli_num_rows($res) > 0) {
+        while($row = mysqli_fetch_assoc($res)) {
+            $a['client'][] = $row;
+        }    
+    };
+    
+    if (mysqli_num_rows($res_names) > 0) {
+        while($row = mysqli_fetch_assoc($res_names)) {
+            $a['names'][] = $row;
+        }    
+    };
+
+    if (mysqli_num_rows($res_city) > 0) {
+        while($row = mysqli_fetch_assoc($res_city)) {
+            $a['city'][] = $row;
+        }    
+    };
+
+    $sql_pag = "SELECT id FROM react_task_1_clients WHERE FirstName = '".$filterName."' AND  City = '".$city."'";
+    $number_clients = mysqli_num_rows( $mysqli->query($sql_pag));
+    $pages = [];
+    for($i=1; $i <= ceil( $number_clients / $limit ); $i++){
+        $pages[$i-1]=$i;
+    };
+    $a['total'] =  [
+        'clients'=>$number_clients,
+        'numberPages'=>$pages,
+    ];
+    
+    
+    return json_encode($a);
+};
+
+function getClientsFilterCity($city, $page, $limit){    
+    $mysqli = new mysqli(SERVERNAME, USERNAME, PASSWORD, DBNAME);
+    $offset = ($page-1)*$limit;
+    
+    $sql_clients = "SELECT * FROM react_task_1_clients WHERE City = '".$city."' ORDER BY FirstName, LastName, City LIMIT ".$limit." OFFSET ".$offset;
+    $sql_names = "SELECT DISTINCT FirstName FROM react_task_1_clients WHERE City = '".$city."' ORDER BY FirstName";
+    $sql_city = "SELECT DISTINCT City FROM react_task_1_clients ORDER BY City";
+    $res = $mysqli->query($sql_clients);
+    $res_names = $mysqli->query($sql_names); 
+    $res_city = $mysqli->query($sql_city);       
+    
+    $a = array();
+    
+    if (mysqli_num_rows($res) > 0) {
+        while($row = mysqli_fetch_assoc($res)) {
+            $a['client'][] = $row;
+        }    
+    };
+    
+    if (mysqli_num_rows($res_names) > 0) {
+        while($row = mysqli_fetch_assoc($res_names)) {
+            $a['names'][] = $row;
+        }    
+    };
+
+    if (mysqli_num_rows($res_city) > 0) {
+        while($row = mysqli_fetch_assoc($res_city)) {
+            $a['city'][] = $row;
+        }    
+    };
+    
+    $sql_pag = "SELECT id FROM react_task_1_clients WHERE City = '".$city."'";
+    $number_clients = mysqli_num_rows( $mysqli->query($sql_pag));
+    $pages = [];
+    for($i=1; $i <= ceil( $number_clients / $limit ); $i++){
+        $pages[$i-1]=$i;
+    };
+    $a['total'] =  [
+        'clients'=>$number_clients,
+        'numberPages'=>$pages,
+    ];
+    
+    
     return json_encode($a);
 };
 
@@ -25,7 +195,6 @@ function getUsersData(){
         }    
     };
     return json_encode($a);
-
 };
 
 function getTasksData($id){  

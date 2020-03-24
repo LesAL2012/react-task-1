@@ -3,14 +3,10 @@ import { Redirect } from 'react-router-dom';
 import AdminPanel from '../AdminPanel/AdminPanel';
 import LeftRightSide from '../LeftRightSide/LeftRightSide';
 import { gdAuth } from '../../redux/commonReducer';
-//import css from './MainConteiner.module.css';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 
-
 import { getAuth } from '../../redux/selector';
-
-
 
 class MainContainer extends React.Component {
 

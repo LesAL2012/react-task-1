@@ -5,7 +5,7 @@ const HeaderContainer = () => {
 
         return <div className={css.header}>
                 <div className="container" >
-                        React Redux Lazy&Suspense <i className="fab fa-reacteurope"></i>
+                        React Redux Lazy&Suspense Reselect <i className="fab fa-reacteurope"></i>
                         &nbsp;API Axios Promise: async/await <i className="fab fa-reacteurope"></i>
                         &nbsp;Bootstrap Module-CSS Sort Filter
                         &nbsp;<i className="fas fa-database"></i>

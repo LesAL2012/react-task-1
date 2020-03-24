@@ -40,9 +40,8 @@ if(
 ){
     $sql = "INSERT INTO react_task_1_clients (FirstName, LastName, City, Address, Phone, CreationDate, EditingDate) 
     VALUES ('$FirstName','$LastName','$City','$Address','$Phone','$dt','$dt')";  
-    $mysqli->query($sql);
+    $mysqli->query($sql);    
     
-    echo getClientsData();    
 }
 elseif(
     $_POST['hash'] === $hash_db['hash']    
@@ -54,7 +53,21 @@ elseif(
     WHERE id = '$id_client'";  
     $mysqli->query($sql);
     
-    echo getClientsData();    
+    echo getClientsDataFull($_POST['page'], $_POST['limit']);    
+}
+elseif(
+    $_POST['hash'] === $hash_db['hash']    
+&& $_POST['role'] === $role_db['role'] 
+&& $role_db['role'] === 'admin'
+&& $_POST['action'] === 'deleteClient'
+){
+    $sql = "DELETE FROM react_task_1_tasks WHERE id_client = '$id_client'";  
+    $mysqli->query($sql);
+
+    $sql = "DELETE FROM react_task_1_clients WHERE id = '$id_client'";  
+    $mysqli->query($sql);
+    
+    echo getClientsDataFull($_POST['page'], $_POST['limit']);    
 }
 elseif(
     $_POST['hash'] === $hash_db['hash']    
@@ -103,24 +116,10 @@ elseif(
     
     echo getTasksData($id_client);   
 }
-elseif(
-    $_POST['hash'] === $hash_db['hash']    
-&& $_POST['role'] === $role_db['role'] 
-&& $role_db['role'] === 'admin'
-&& $_POST['action'] === 'deleteClient'
-){
-    $sql = "DELETE FROM react_task_1_tasks WHERE id_client = '$id_client'";  
-    $mysqli->query($sql);
 
-    $sql = "DELETE FROM react_task_1_clients WHERE id = '$id_client'";  
-    $mysqli->query($sql);
-    
-    echo getClientsData($id_client);   
-}                
-                
 
 else {
     echo 'false';
-}
+};
 
 $mysqli->close();

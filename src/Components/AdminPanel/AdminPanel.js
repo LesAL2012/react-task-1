@@ -10,6 +10,7 @@ import {
     getLanguageButtonAdminPanel,
     getUsers,
     getClients,
+    getLanguageAdminField,
 
 } from '../../redux/selector';
 
@@ -24,30 +25,33 @@ class AdminPanel extends React.Component {
         this.state = {
             displayAddUser: 'd-none',
             displayAddClient: 'd-none',
+            filterName: 'ALL',
 
-
+            name: JSON.parse(localStorage.getItem('reactUserLogin')).name,
+            hash: JSON.parse(localStorage.getItem('reactUserLogin')).hash,
+            role: JSON.parse(localStorage.getItem('reactUserLogin')).role,
         };
     }
 
     componentDidMount = () => {
-        let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-        let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-        let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
-
         let paramsUser = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
             'action': 'getUsers',
         };
         let queryString = Object.keys(paramsUser).map(key => key + '=' + paramsUser[key]).join('&');
         this.props.gdUsers(queryString);
 
         let paramsClient = {
-            'name': name,
-            'hash': hash,
-            'role': role,
+            'name': this.state.name,
+            'hash': this.state.hash,
+            'role': this.state.role,
+            'filterName': this.state.filterName,
             'action': 'getClients',
+            'filterCity': 'ALL',
+            'limit': 5,
+            'page': 1,
         };
         let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
         this.props.gdClients(queryStringClient);
@@ -87,9 +91,6 @@ class AdminPanel extends React.Component {
             alert('Phone number 3 - is not valid')
         }
         else {
-            let name = JSON.parse(localStorage.getItem('reactUserLogin')).name;
-            let hash = JSON.parse(localStorage.getItem('reactUserLogin')).hash;
-            let role = JSON.parse(localStorage.getItem('reactUserLogin')).role;
 
             let Phone = phone1;
             if (phone2) {
@@ -100,9 +101,9 @@ class AdminPanel extends React.Component {
             }
 
             let params = {
-                'name': name,
-                'hash': hash,
-                'role': role,
+                'name': this.state.name,
+                'hash': this.state.hash,
+                'role': this.state.role,
                 'action': 'addNewClient',
                 'FirstName': event.target["FirstName"].value.trim(),
                 'LastName': event.target["LastName"].value.trim(),
@@ -114,15 +115,8 @@ class AdminPanel extends React.Component {
             let queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&');
             this.props.gdNewUserClient(queryString, params['action']);
 
-            let paramsClient = {
-                'name': name,
-                'hash': hash,
-                'role': role,
-                'action': 'getClients',
-            };
-            let queryStringClient = Object.keys(paramsClient).map(key => key + '=' + paramsClient[key]).join('&');
-            this.props.gdClients(queryStringClient);
-            this.stopAddNewClientUser();
+            window.location.href = "/";
+
         }
     }
 
@@ -157,7 +151,7 @@ class AdminPanel extends React.Component {
             };
             let queryString = Object.keys(params).map(key => key + '=' + params[key]).join('&');
             this.props.gdNewUserClient(queryString, params['action']);
-            this.stopAddNewClientUser();            
+            this.stopAddNewClientUser();
         }
     }
 
@@ -196,41 +190,41 @@ class AdminPanel extends React.Component {
                     <Form onSubmit={this.addClientToDB}>
                         <Form.Row>
                             <Form.Group as={Col} controlId="FirstName">
-                                <Form.Label>First name</Form.Label>
-                                <Form.Control type="text" placeholder="First name" required />
+                                <Form.Label>{this.props.adminField.firstName[this.props.lang].firstNameField}</Form.Label>
+                                <Form.Control type="text" placeholder={this.props.adminField.firstName[this.props.lang].firstNameField} required />
                             </Form.Group>
 
                             <Form.Group as={Col} controlId="LastName">
-                                <Form.Label>Last name</Form.Label>
-                                <Form.Control type="text" placeholder="Last name" required />
+                                <Form.Label>{this.props.adminField.lastName[this.props.lang].lastNameField}</Form.Label>
+                                <Form.Control type="text" placeholder={this.props.adminField.lastName[this.props.lang].lastNameField} required />
                             </Form.Group>
                         </Form.Row>
                         <Form.Group controlId="City">
-                            <Form.Label>City</Form.Label>
-                            <Form.Control placeholder="City" required />
+                            <Form.Label>{this.props.adminField.city[this.props.lang].cityField}</Form.Label>
+                            <Form.Control placeholder={this.props.adminField.city[this.props.lang].cityField} required />
                         </Form.Group>
                         <Form.Group controlId="Address">
-                            <Form.Label>Address</Form.Label>
-                            <Form.Control placeholder="Address" required />
+                            <Form.Label>{this.props.adminField.address[this.props.lang].addressField}</Form.Label>
+                            <Form.Control placeholder={this.props.adminField.address[this.props.lang].addressField} required />
                         </Form.Group>
                         <Form.Row>
                             <Form.Group as={Col} controlId="Phone1">
-                                <Form.Label>Phone 1 - required<br />380507771144</Form.Label>
-                                <Form.Control type="number" placeholder="Tel..." required />
+                                <Form.Label><i className="fas fa-phone"></i> 1 - {this.props.adminField.required[this.props.lang].requiredField}<br />380507771144</Form.Label>
+                                <Form.Control type="number" placeholder={this.props.adminField.tel[this.props.lang].telField} required />
                             </Form.Group>
                             <Form.Group as={Col} controlId="Phone2">
-                                <Form.Label>Phone 2<br />380507771144</Form.Label>
-                                <Form.Control type="number" placeholder="Tel..." />
+                                <Form.Label><i className="fas fa-phone"></i> 2<br />380507771144</Form.Label>
+                                <Form.Control type="number" placeholder={this.props.adminField.tel[this.props.lang].telField} />
                             </Form.Group>
                             <Form.Group as={Col} controlId="Phone3">
-                                <Form.Label>Phone 3<br />380507771144</Form.Label>
-                                <Form.Control type="number" placeholder="Tel..." />
+                                <Form.Label><i className="fas fa-phone"></i> 3<br />380507771144</Form.Label>
+                                <Form.Control type="number" placeholder={this.props.adminField.tel[this.props.lang].telField} />
                             </Form.Group>
                         </Form.Row>
 
                         <div className="row">
                             <div className="col-12">
-                                <Button variant="primary" type="submit" className="float-left">                                   
+                                <Button variant="primary" type="submit" className="float-left">
                                     {this.props.adminBtn[this.props.lang].addNewClientBtn}
                                 </Button>
                                 <Button variant="secondary" className="float-right"
@@ -254,11 +248,11 @@ class AdminPanel extends React.Component {
                     <Form onSubmit={this.addUserToDB}>
                         <Form.Row>
                             <Form.Group as={Col} controlId="email">
-                                <Form.Label>Email</Form.Label>
+                                <Form.Label>{this.props.adminField.email[this.props.lang].emailField}</Form.Label>
                                 <Form.Control type="email" placeholder="Email" required />
                             </Form.Group>
                             <Form.Group controlId="roleUser">
-                                <Form.Label>Role</Form.Label>
+                                <Form.Label>{this.props.adminField.role[this.props.lang].roleField}</Form.Label>
                                 <Form.Control as="select">
                                     <option>user</option>
                                     <option>admin</option>
@@ -267,12 +261,12 @@ class AdminPanel extends React.Component {
                         </Form.Row>
                         <Form.Row>
                             <Form.Group as={Col} controlId="password1">
-                                <Form.Label>Password</Form.Label>
+                                <Form.Label>{this.props.adminField.password[this.props.lang].passwordField}</Form.Label>
                                 <Form.Control type="password" placeholder="Password" required />
                             </Form.Group>
                             <Form.Group as={Col} controlId="password2">
-                                <Form.Label>Repeat password</Form.Label>
-                                <Form.Control type="password" placeholder="Repeat password" required />
+                                <Form.Label>{this.props.adminField.repeatPassword[this.props.lang].repeatPasswordField}</Form.Label>
+                                <Form.Control type="password" placeholder={this.props.adminField.repeatPassword[this.props.lang].repeatPasswordField} required />
                             </Form.Group>
                         </Form.Row>
 
@@ -280,7 +274,7 @@ class AdminPanel extends React.Component {
                         <div className="row">
                             <div className="col-12">
                                 <Button variant="primary" type="submit" className="float-left">
-                                {this.props.adminBtn[this.props.lang].addNewUserBtn}
+                                    {this.props.adminBtn[this.props.lang].addNewUserBtn}
                                 </Button>
                                 <Button variant="secondary" className="float-right"
                                     onClick={this.stopAddNewClientUser}
@@ -307,6 +301,7 @@ let mapStateToProps = (state) => {
         users: getUsers(state),
         lang: getLanguage(state),
         adminBtn: getLanguageButtonAdminPanel(state),
+        adminField: getLanguageAdminField(state),
     }
 }
 

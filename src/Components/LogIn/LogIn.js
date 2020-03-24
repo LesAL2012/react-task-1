@@ -4,7 +4,11 @@ import { Redirect } from 'react-router-dom';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import { Form, Button } from 'react-bootstrap';
-import { getAuth, getLanguage,  getLanguageLogin } from '../../redux/selector';
+import { getAuth, 
+    getLanguage,  
+    getLanguageLogin, 
+    getLanguageButtonSubmit 
+} from '../../redux/selector';
 
 class LogIn extends React.Component {
 
@@ -15,8 +19,7 @@ class LogIn extends React.Component {
         this.props.gdLogin(name, pass);
     }
 
-    render() {       
-        console.log(this.props.login[this.props.lang].forEnterUser)
+    render() {               
         return <>
             {
                 this.props.auth === false
@@ -44,7 +47,7 @@ class LogIn extends React.Component {
                                 <b>Password:</b> Admin111
                             </p>
                             <Button variant="primary" type="submit">
-                                Submit
+                                {this.props.submit[this.props.lang].submitBtn}
                         </Button>
                         </Form>
                     </div>
@@ -63,6 +66,7 @@ let mapStateToProps = (state) => {
         auth: getAuth(state),
         lang: getLanguage(state),
         login: getLanguageLogin(state),
+        submit: getLanguageButtonSubmit(state),
     }
 }
 

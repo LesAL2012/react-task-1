@@ -1,4 +1,4 @@
-1. Set your confit in file: ./config_db.php
+1. Set your config in file: ./config_db.php
 
 2. Set three database on your server:
  ./react_task_1_clients.sql; 
